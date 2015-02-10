@@ -12,6 +12,7 @@
 
     "jsList" : [
         "src/resource.js",
+        "src/Sheep.js",
         "src/IntroScene0.js",
         "src/GameEndScene.js",
         "src/MyLoaderScene.js",

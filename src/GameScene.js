@@ -9,19 +9,25 @@ var kGameEnded = 4;
 
 var state = kGameReady;
 
-var numbersData = [1,2,3,-1,-2,-3];
 
 //这是一个保存娃娃数量的json数据
 dollNum = {Aries: 0, Taurus: 0, Gemini: 0, Cancer: 0, Leo: 0, Virgo: 0, Libra: 0, Scorpius: 0, Sagittarius: 0, Capricornus: 0, Aquarius: 0, Pisces: 0};
 
+var numbersData = [1,2,3,-1,-2,-3];
 
 
 var GameSceneLayer = cc.Layer.extend({
     levelTipLabel:null,
     totalTime:4,
     level:0,
+    slippedNum:0,
+    sheepSpeed:1,
+    addSheepTimeInterval:3,
+    addSheepNum:1,
     gameLayer:null,
     pastTime:null,
+    sheepPool:null,
+    sheepsInGame:null,
     ctor:function () {
         //////////////////////////////
         // 1. super init first
@@ -39,6 +45,12 @@ var GameSceneLayer = cc.Layer.extend({
         bg.y = size.height-118/2;
         this.addChild(bg);
 
+        this.sheepPool = new Array();
+        this.sheepsInGame = new Array();
+
+        this.gameLayer = new cc.Layer();
+        this.addChild(this.gameLayer);
+
 
         this.levelTipLabel = new cc.LabelTTF("0", "Arial", 60);
         // position the label on the center of the screen
@@ -47,6 +59,24 @@ var GameSceneLayer = cc.Layer.extend({
         this.levelTipLabel.color = cc.color(0x4d,0x4d,0x4d);
         // add the label as a child to this layer
         this.addChild(this.levelTipLabel, 5);
+
+        //add animation cache
+        var animationCache = cc.animationCache;
+        var animation = new cc.Animation();
+        animationCache.addAnimation(animation, "sheep1die");
+        animation.addSpriteFrameWithFile("res/animations/c2/c2piss1.png");
+        animation.addSpriteFrameWithFile("res/animations/c2/c2piss2.png");
+        animation.setDelayPerUnit(0.3);
+
+        animation = new cc.Animation();
+        animationCache.addAnimation(animation, "sheep1run");
+        animation.addSpriteFrameWithFile("res/animations/c2/c2toright1.png");
+        animation.addSpriteFrameWithFile("res/animations/c2/c2toright2.png");
+        animation.addSpriteFrameWithFile("res/animations/c2/c2toright3.png");
+        animation.setDelayPerUnit(0.2);
+
+
+
 
 
         cc.eventManager.addListener({
@@ -57,9 +87,35 @@ var GameSceneLayer = cc.Layer.extend({
             onTouchEnded: this.onTouchEnded
         }, this);
 
+        this.createSheepsInPool();
+
+
+
         this.setLevel(0);
+
         this.schedule(this.step);
         return true;
+    },
+
+    getSheepFromPool:function(){
+        for(var i = 0; i < this.sheepPool.length; i++){
+            var sheep = this.sheepPool[i];
+            if(sheep.state == kSheepUNKNOW)
+                return sheep;
+        }
+
+        var sheep = new Sheep();
+        this.gameLayer.addChild(sheep, 5);
+        this.sheepPool.push(sheep);
+        return sheep;
+    },
+
+    createSheepsInPool:function(){
+        for(var i = 0; i < 10; i++){
+            var sheep = new Sheep();
+            this.gameLayer.addChild(sheep, 5);
+            this.sheepPool.push(sheep);
+        }
     },
 
     onTouchBegan:function (touch, event) {
@@ -112,20 +168,59 @@ var GameSceneLayer = cc.Layer.extend({
         this.totalTime = 2.5;
         if(this.level < 5) {
             this.totalTime = 2.5;
+
+            this.addSheepTimeInterval =7+(Math.random()*10)/10;
+            this.addSheepNum =2;
+            this.sheepSpeed = 1;
+
         }else if(this.level < 10){
             this.totalTime = 2;
+            this.addSheepTimeInterval =5+(Math.random()*10)/10;
+            this.addSheepNum =2;
+            this.sheepSpeed = 2;
         }else if(this.level < 20){
             this.totalTime = 1.5;
+            this.addSheepTimeInterval =4+(Math.random()*10)/10;
+            this.addSheepNum =3;
+            this.sheepSpeed = 3;
         }else{
             this.totalTime = 1;
+            this.addSheepTimeInterval = 3+(Math.random()*10)/10;
+            this.addSheepNum =3;
+            this.sheepSpeed = 3;
         }
         this.createNewGame();
         this.currentTime = this.totalTime;
         this.pastTime = 0;
 
+
         state = kGaming;
 
         //this.itemLayer.runAction(cc.repeatForever(cc.blink(1,2)));
+
+
+        //隔n秒添加n只羊，
+        this.getSheepsToGame(this,this);
+    },
+
+    getSheepsToGame:function(target,s){
+        for(var i = 0; i < this.addSheepNum; i++){
+            var sheep = this.getSheepFromPool();
+            sheep.speed = this.sheepSpeed + Math.random();
+            var randomRoad = Math.floor(Math.random() * 3);
+            sheep.setRoad(randomRoad);
+            sheep.setLocalZOrder(-sheep.getPositionY());
+
+            sheep.run();
+
+
+            if(this.sheepsInGame.indexOf(sheep)<0)
+                this.sheepsInGame.push(sheep);
+        }
+        var callFunc = new cc.callFunc(target.getSheepsToGame,target,target);
+        this.runAction(cc.sequence(cc.delayTime(this.addSheepTimeInterval),callFunc));
+
+        //this.scheduleOnce(this.getSheepsToGame,this.addSheepTimeInterval);
     },
 
     nextLevel:function(){
@@ -138,12 +233,23 @@ var GameSceneLayer = cc.Layer.extend({
     },
 
     step:function(dt){
-        if(this.level > 0 && state == kGaming){
+        if(state == kGaming){
             //this.currentTime -= dt;
             //if(this.currentTime <0)
             //    this.currentTime = 0;
             //if(this.currentTime == 0)
             //    this.timeUp();
+
+            for(var i = 0; i < this.sheepsInGame.length; i++){
+                var sheep = this.sheepsInGame[i];
+                if(sheep.isMoving()){
+                    sheep.step();
+                    if(sheep.isSheepSlipped()){
+                        this.slippedNum++;
+                        sheep.reset();
+                    }
+                }
+            }
         }
     },
 
@@ -182,7 +288,12 @@ var GameSceneLayer = cc.Layer.extend({
     },
 
     createNewGame:function(){
+        this.sheepsInGame = new Array();
 
+
+
+
+        state = kGaming;
     },
 
     gameEnd:function(){

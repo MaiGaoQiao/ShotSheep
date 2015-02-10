@@ -1,7 +1,13 @@
 var playerScore = 0;
 var playerAnswer = "";
 
+var ROAD0 = 0;
+var ROAD1 = 1;
+var ROAD2 = 2;
 
+var kSheepUNKNOW = 0;
+var kSheepDie = 1;
+var kSheepRun = 2;
 
 var res = {
     barFrame_png :"res/barFrame.png",
