@@ -1,5 +1,4 @@
 var playerScore = 0;
-var playerAnswer = "";
 
 var ROAD0 = 0;
 var ROAD1 = 1;
@@ -9,11 +8,24 @@ var kSheepUNKNOW = 0;
 var kSheepDie = 1;
 var kSheepRun = 2;
 
+var BLUE_SHEEP = 0;
+var RED_SHEEP = 1;
+var GREEN_SHEEP = 2;
+
+var arrowSpeed = 720;
+var arrowLength = 50;
+
+var RUN_RIGHT = 0;
+var RUN_LEFT = 1;
+
 var res = {
     barFrame_png :"res/barFrame.png",
     urineBar_jpg : "res/urineBar.png",
+    arrow_png : "res/arrow.png",
+    shotPlatformbg_png : "res/shotPlatformbg.png",
     man_png : "res/man.png",
     homebg_png : "res/homebg.png",
+    pausebg_png :"res/pausebg.png",
     pauseBt_png : "res/pauseBt.png",
     levelTipBg_png:"res/levelTipBg.png",
     star0_png : "res/star0.png",
